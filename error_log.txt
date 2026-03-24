@@ -1,0 +1,47 @@
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 102, in <module>
+    start()
+    ~~~~~^^
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 91, in start
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 102, in <module>
+    start()
+    ~~~~~^^
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 91, in start
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 102, in <module>
+    start()
+    ~~~~~^^
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 91, in start
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 87, in <module>
+    app.include_router(site_login_routes.router)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'route.site_login_routes' has no attribute 'router'
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 103, in <module>
+    start()
+    ~~~~~^^
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 92, in start
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 103, in <module>
+    start()
+    ~~~~~^^
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 92, in start
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 103, in <module>
+    start()
+    ~~~~~^^
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 92, in start
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'
