@@ -18,7 +18,8 @@ from database_controller import get_db
 
 # Routes
 from route import (
- site_login_routes
+ site_login_routes,
+ site_homescreen_routes
 )
 
 
@@ -95,6 +96,7 @@ app.add_middleware(
 # app.include_router(saida_estoque_routes.router)
 # app.include_router(inadimplencia_routes.router)
 app.include_router(site_login_routes.router)
+app.include_router(site_homescreen_routes.router)
 # =========================
 # START DO UVICORN (EXE SAFE)
 # =========================
