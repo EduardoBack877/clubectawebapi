@@ -4,22 +4,20 @@ from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from sqlalchemy import text
+from fastapi.staticfiles import StaticFiles
 
 import controller_user_authenticate
 from BCryptHasher import BcryptHasher
 
 from database_controller import get_db
 
-# # Models (força o PyInstaller a incluir)
-# from model.consulta_model import Consulta
-# from model.produto_model import Grupo, Subgrupo, Produto
-# from model.movimentacao_model import Movimentacao, MovimentacaoItem
-# from model.motivo_saida_model import MotivoSaida  # ← ADICIONE AQUI
+
 
 # Routes
 from route import (
- site_login_routes,
- site_homescreen_routes
+    site_login_routes,
+    site_homescreen_routes,
+    site_adminpage_routes
 )
 
 
@@ -72,31 +70,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # =========================
 # ROTAS
 # =========================
-# app.include_router(controller_user_authenticate.router)
-# app.include_router(pessoa_routes.router)
-# app.include_router(cidade_routes.router)
-# app.include_router(empresa_routes.router)
-# app.include_router(tipoconvenio_routes.router)
-# app.include_router(usuario_routes.router)
-# app.include_router(parterecepcao_routes.router)
-# app.include_router(cid_routes.router)
-# app.include_router(partemedico_routes.router)
-# app.include_router(cat_routes.router)
-# app.include_router(PDFWeb_routes.router)
-# app.include_router(consulta_routes.router)
-# app.include_router(cartao_routes.router)
-# app.include_router(cadastrar_convidado_routes.router)
-# app.include_router(produto_routes.router)                   # ← NOVO
-# app.include_router(fornecedor_routes.router)
-# app.include_router(entrada_estoque_routes.router)
-# app.include_router(saida_estoque_routes.router)
-# app.include_router(inadimplencia_routes.router)
+
 app.include_router(site_login_routes.router)
 app.include_router(site_homescreen_routes.router)
+app.include_router(site_adminpage_routes.router)
 # =========================
 # START DO UVICORN (EXE SAFE)
 # =========================

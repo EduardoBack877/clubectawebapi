@@ -45,6 +45,7 @@ Traceback (most recent call last):
   File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 92, in start
     import uvicorn
 ModuleNotFoundError: No module named 'uvicorn'
+<<<<<<< HEAD
 Exception in ASGI application
 Traceback (most recent call last):
   File "C:\Users\bruno\PycharmProjects\clubectawebapi\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
@@ -1233,3 +1234,40 @@ Traceback (most recent call last):
     ...<2 lines>...
     ) from err
 sqlalchemy.exc.NoSuchColumnError: Could not locate column in row for column 'data_reserva'
+=======
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 76, in <module>
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+                          ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\staticfiles.py", line 56, in __init__
+    raise RuntimeError(f"Directory '{directory}' does not exist")
+RuntimeError: Directory 'uploads' does not exist
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 76, in <module>
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+                          ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\staticfiles.py", line 56, in __init__
+    raise RuntimeError(f"Directory '{directory}' does not exist")
+RuntimeError: Directory 'uploads' does not exist
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 73, in <module>
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+                          ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\staticfiles.py", line 56, in __init__
+    raise RuntimeError(f"Directory '{directory}' does not exist")
+RuntimeError: Directory 'uploads' does not exist
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 73, in <module>
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+                          ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\staticfiles.py", line 56, in __init__
+    raise RuntimeError(f"Directory '{directory}' does not exist")
+RuntimeError: Directory 'uploads' does not exist
+Traceback (most recent call last):
+  File "C:\Users\gabri\PycharmProjects\clubectawebapi\main.py", line 73, in <module>
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+                          ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\staticfiles.py", line 56, in __init__
+    raise RuntimeError(f"Directory '{directory}' does not exist")
+RuntimeError: Directory 'uploads' does not exist
+>>>>>>> c94812d25ff73c1218ab28da2e9b72371427d66b
