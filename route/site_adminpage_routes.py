@@ -174,20 +174,27 @@ def deletar_ambiente(
 
 
 # ── LISTAR AMBIENTES ────────────────────────────────────────────
-@router.get("/")
+@router.get("/api/ambientes")
 def listar_ambientes(db: Session = Depends(database_controller.get_db)):
     try:
-        rows = db.execute(text("""
+        # Adicionei todas as colunas no GROUP BY para evitar erro de sintaxe SQL
+        # E troquei a.createdate por a.ambientes_uid caso a coluna createdate não exista
+        query = text("""
             SELECT
                 a.ambientes_uid, a.nome, a.descricao, a.capacidade, a.isactive,
                 a.capa_mimetype, a.capa_nome,
                 COUNT(g.ambiente_galeria_uid) AS total_fotos
-            FROM ambientes a
+            FROM ambiente a
             LEFT JOIN ambiente_galeria g ON g.ambientes_uid = a.ambientes_uid
-            WHERE a.isactive = true
-            GROUP BY a.ambientes_uid
-            ORDER BY a.createdate DESC
-        """)).fetchall()
+            WHERE a.isactive = 1
+            GROUP BY 
+                a.ambientes_uid, a.nome, a.descricao, a.capacidade, 
+                a.isactive, a.capa_mimetype, a.capa_nome
+            ORDER BY a.ambientes_uid DESC
+        """)
+
+        result = db.execute(query)
+        rows = result.fetchall()
 
         return [
             {
@@ -204,8 +211,9 @@ def listar_ambientes(db: Session = Depends(database_controller.get_db)):
         ]
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar ambientes: {str(e)}")
-
+        # ESTE PRINT É ESSENCIAL: Ele vai mostrar o erro real no seu terminal do VS Code
+        print(f"ERRO NO BACKEND: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar: {str(e)}")
 
 # ── CAPA DO AMBIENTE ────────────────────────────────────────────
 @router.get("/{ambientes_uid}/capa")
@@ -229,20 +237,18 @@ def get_capa(ambientes_uid: str, db: Session = Depends(database_controller.get_d
 
 
 # ── INSERIR FOTO NA GALERIA ─────────────────────────────────────
-@router.post("/{ambientes_uid}/galeria")
+@router.post("/api/ambientes/{ambientes_uid}/galeria")
 async def adicionar_foto(
-    ambientes_uid: str,
-    foto: UploadFile = File(...),
-    legenda: str = Form(default=None),
-    ordem: int = Form(default=0),
-    db: Session = Depends(database_controller.get_db),
+        ambientes_uid: str,
+        foto: UploadFile = File(...),
+        legenda: str = Form(None),
+        ordem: int = Form(0),
+        db: Session = Depends(database_controller.get_db),
 ):
     try:
         foto_bytes = await foto.read()
 
-        if len(foto_bytes) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="Imagem excede 10 MB")
-
+        # INSERT (Certifique-se de que a tabela existe no banco)
         result = db.execute(text("""
             INSERT INTO ambiente_galeria (
                 ambientes_uid, foto_dados, foto_mimetype,
@@ -260,18 +266,12 @@ async def adicionar_foto(
             "legenda": legenda,
             "ordem": ordem,
         })
-
         db.commit()
-        new_uid = result.fetchone()[0]
-
-        return {"id": str(new_uid)}
-
-    except HTTPException:
-        raise
+        return {"id": str(result.fetchone()[0])}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao adicionar foto: {str(e)}")
-
+        print(f"Erro no insert: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ── LISTAR GALERIA ──────────────────────────────────────────────
 @router.get("/{ambientes_uid}/galeria")
