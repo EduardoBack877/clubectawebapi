@@ -63,6 +63,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# ✅ apenas UM middleware CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -70,12 +71,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-# =========================
-# ROTAS
-# =========================
 
 app.include_router(site_login_routes.router)
 app.include_router(site_homescreen_routes.router)
