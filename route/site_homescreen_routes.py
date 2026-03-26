@@ -20,7 +20,7 @@ def get_ambientes(db=Depends(database_controller.get_db)):
             a.capa_dados,
             a.capa_mimetype,
             r.data_reserva
-        FROM ambientes a
+        FROM ambiente a
         LEFT JOIN reservas r 
             ON r.ambientes_uid = a.ambientes_uid
             AND r.status = 'confirmada'

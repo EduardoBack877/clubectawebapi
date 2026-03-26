@@ -17,7 +17,8 @@ from database_controller import get_db
 from route import (
     site_login_routes,
     site_homescreen_routes,
-    site_adminpage_routes
+    site_adminpage_routes,
+    site_paginadetalhada_routes
 )
 
 
@@ -79,6 +80,7 @@ app.add_middleware(
 app.include_router(site_login_routes.router)
 app.include_router(site_homescreen_routes.router)
 app.include_router(site_adminpage_routes.router)
+app.include_router(site_paginadetalhada_routes.router)
 # =========================
 # START DO UVICORN (EXE SAFE)
 # =========================
