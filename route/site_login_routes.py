@@ -15,6 +15,7 @@ class RegisterPayload(BaseModel):
     password: str
     name: str
     sex: str
+    phone: str
 
 from sqlalchemy import text, INTEGER
 
@@ -49,14 +50,16 @@ def register(data: RegisterPayload, db=Depends(database_controller.get_db)):
                 nome,
                 isfeminino,
                 isvisitante,
-                isactive
+                isactive,
+                telefone
             )
-            VALUES (:email, :senha, :nome, :sex, 1, 1)
+            VALUES (:email, :senha, :nome, :sex, 1, 1, :telefone)
         """), {
             "email": data.email,
             "senha": senha_hash,
             "nome": data.name,
-            "sex":  sex
+            "sex":  sex,
+            "telefone": data.phone
         })
 
         db.commit()
@@ -71,6 +74,7 @@ def register(data: RegisterPayload, db=Depends(database_controller.get_db)):
 class LoginPayload(BaseModel):
     email: str
     password: str
+
 
 @router.post("/auth/login")
 def login(data: LoginPayload, db=Depends(database_controller.get_db)):

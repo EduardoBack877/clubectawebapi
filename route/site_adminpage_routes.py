@@ -347,3 +347,32 @@ def deletar_foto(ambientes_uid: str, foto_uid: str, db: Session = Depends(databa
         raise HTTPException(status_code=500, detail=f"Erro ao deletar foto: {str(e)}")
         print("🔥 ERRO BACKEND:", e)
         return {"erro": str(e)}
+
+
+@router.get("/get/ambiente/album/{ambientes_uid}")
+def get_ambiente_album(ambientes_uid: str, db: Session = Depends(database_controller.get_db)):
+    try:
+        result = db.execute(text("""Select ambiente_galeria_uid,
+                                     foto_dados, 
+                                     foto_mimetype, 
+                                     foto_nome, 
+                                     foto_tamanho, 
+                                     legenda, 
+                                     ordem from ambiente_galeria where ambiente_uid = :ambientes_uid"""),
+                            {"ambientes_uid": ambientes_uid}).fetchall()
+
+        return [
+            {
+                "id": str(r[0]),
+                "foto_nome": r[1],
+                "legenda": r[4],
+                "ordem": r[5],
+                "url": f"/ambientes/{ambientes_uid}/galeria/{r[0]}/imagem",
+            }
+            for r in result
+        ]
+
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao deletar foto: {str(e)}")
