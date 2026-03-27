@@ -107,6 +107,7 @@ def login(data: LoginPayload, db=Depends(database_controller.get_db)):
         return {
             "token": token,
             "name": user[1],
+            "id" : user[0],
             "type": "bearer"
         }
 
