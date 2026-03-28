@@ -1,14 +1,11 @@
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+from fastapi import  UploadFile, File, Form
 from fastapi.responses import Response
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-
+from fastapi import APIRouter, Depends, HTTPException
+import base64
 from typing import Optional
-
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-
 import database_controller
 
 router = APIRouter()
@@ -181,11 +178,19 @@ def listar_ambientes(db: Session = Depends(database_controller.get_db)):
         # E troquei a.createdate por a.ambientes_uid caso a coluna createdate não exista
         query = text("""
             SELECT
-                a.ambientes_uid, a.nome, a.descricao, a.capacidade, a.isactive,
-                a.capa_mimetype, a.capa_nome,
-                COUNT(g.ambiente_galeria_uid) AS total_fotos
+                a.ambientes_uid, 
+                a.nome, 
+                a.descricao, 
+                a.capacidade, 
+                a.isactive,
+                a.capa_mimetype, 
+                a.capa_nome,
+                COUNT(DISTINCT g.ambiente_galeria_uid) AS total_fotos,
+                COUNT(DISTINCT r.reservas_uid) AS total_reservas_ativas
             FROM ambiente a
             LEFT JOIN ambiente_galeria g ON g.ambientes_uid = a.ambientes_uid
+            LEFT JOIN reservas r ON r.ambientes_uid = a.ambientes_uid 
+                AND r.status = 'confirmada'  -- Ajuste aqui para o seu critério de "ativa"
             WHERE a.isactive = 1
             GROUP BY 
                 a.ambientes_uid, a.nome, a.descricao, a.capacidade, 
@@ -206,6 +211,7 @@ def listar_ambientes(db: Session = Depends(database_controller.get_db)):
                 "capa_url": f"/ambientes/{r[0]}/capa" if r[5] else None,
                 "capa_nome": r[6],
                 "total_fotos": r[7],
+                "quantidade_reservas": r[8]
             }
             for r in rows
         ]
@@ -236,42 +242,6 @@ def get_capa(ambientes_uid: str, db: Session = Depends(database_controller.get_d
         raise HTTPException(status_code=500, detail=f"Erro ao buscar capa: {str(e)}")
 
 
-# ── INSERIR FOTO NA GALERIA ─────────────────────────────────────
-@router.post("/api/ambientes/{ambientes_uid}/galeria")
-async def adicionar_foto(
-        ambientes_uid: str,
-        foto: UploadFile = File(...),
-        legenda: str = Form(None),
-        ordem: int = Form(0),
-        db: Session = Depends(database_controller.get_db),
-):
-    try:
-        foto_bytes = await foto.read()
-
-        # INSERT (Certifique-se de que a tabela existe no banco)
-        result = db.execute(text("""
-            INSERT INTO ambiente_galeria (
-                ambientes_uid, foto_dados, foto_mimetype,
-                foto_nome, foto_tamanho, legenda, ordem
-            )
-            VALUES (:ambientes_uid, :foto_dados, :foto_mimetype,
-                    :foto_nome, :foto_tamanho, :legenda, :ordem)
-            RETURNING ambiente_galeria_uid
-        """), {
-            "ambientes_uid": ambientes_uid,
-            "foto_dados": foto_bytes,
-            "foto_mimetype": foto.content_type,
-            "foto_nome": foto.filename,
-            "foto_tamanho": len(foto_bytes),
-            "legenda": legenda,
-            "ordem": ordem,
-        })
-        db.commit()
-        return {"id": str(result.fetchone()[0])}
-    except Exception as e:
-        db.rollback()
-        print(f"Erro no insert: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 # ── LISTAR GALERIA ──────────────────────────────────────────────
 @router.get("/{ambientes_uid}/galeria")
@@ -322,9 +292,97 @@ def get_foto(ambientes_uid: str, foto_uid: str, db: Session = Depends(database_c
         raise HTTPException(status_code=500, detail=f"Erro ao buscar foto: {str(e)}")
 
 
-# ── DELETAR FOTO ────────────────────────────────────────────────
-@router.delete("/{ambientes_uid}/galeria/{foto_uid}")
-def deletar_foto(ambientes_uid: str, foto_uid: str, db: Session = Depends(database_controller.get_db)):
+
+
+#Parte de album de ambiente, serve para adicionar, listar e remover imagens
+@router.get("/get/ambiente/album/{ambientes_uid}")
+def get_ambiente_album(ambientes_uid: str, db: Session = Depends(database_controller.get_db)):
+    try:
+        # SQL com a ordem exata para facilitar o mapeamento
+        sql = text("""
+            SELECT 
+                ambiente_galeria_uid, 
+                foto_nome, 
+                foto_mimetype, 
+                foto_tamanho, 
+                legenda, 
+                ordem,
+                foto_dados
+            FROM ambiente_galeria 
+            WHERE ambientes_uid = :ambientes_uid
+            ORDER BY ordem ASC
+        """)
+
+        result = db.execute(sql, {"ambientes_uid": ambientes_uid}).fetchall()
+
+        album = []
+        for r in result:
+            # r[0]: uid, r[1]: nome, r[2]: mimetype, r[3]: tamanho, r[4]: legenda, r[5]: ordem, r[6]: dados
+
+            # Monta o Data URI para pré-visualização no Admin
+            foto_base64 = ""
+            if r[6]:  # Se houver dados binários
+                foto_base64 = f"data:{r[2]};base64,{base64.b64encode(r[6]).decode('utf-8')}"
+
+            album.append({
+                "id": str(r[0]),
+                "foto_nome": r[1] or "sem_nome.png",
+                "foto_mimetype": r[2] or "image/png",
+                "foto_tamanho": r[3] or 0,
+                "legenda": r[4] or "",
+                "ordem": r[5] or 0,
+                "foto_url": foto_base64  # No Admin, isso alimenta o <img src={...} />
+            })
+
+        return album
+
+    except Exception as e:
+        print(f"Erro detalhado: {e}")  # Log para debug no terminal
+        raise HTTPException(status_code=500, detail="Erro ao carregar álbum do ambiente")
+
+
+# Insere no album a imagem
+@router.post("/api/ambientes/{ambientes_uid}/galeria")
+async def adicionar_foto(
+        ambientes_uid: str,
+        foto: UploadFile = File(...),
+        legenda: str = Form(None),
+        ordem: int = Form(0),
+        db: Session = Depends(database_controller.get_db),
+):
+    try:
+        foto_bytes = await foto.read()
+
+        # INSERT (Certifique-se de que a tabela existe no banco)
+        result = db.execute(text("""
+            INSERT INTO ambiente_galeria (
+                ambientes_uid, foto_dados, foto_mimetype,
+                foto_nome, foto_tamanho, legenda, ordem
+            )
+            VALUES (:ambientes_uid, :foto_dados, :foto_mimetype,
+                    :foto_nome, :foto_tamanho, :legenda, :ordem)
+            RETURNING ambiente_galeria_uid
+        """), {
+            "ambientes_uid": ambientes_uid,
+            "foto_dados": foto_bytes,
+            "foto_mimetype": foto.content_type,
+            "foto_nome": foto.filename,
+            "foto_tamanho": len(foto_bytes),
+            "legenda": legenda,
+            "ordem": ordem,
+        })
+        db.commit()
+        return {"id": str(result.fetchone()[0])}
+    except Exception as e:
+        db.rollback()
+        print(f"Erro no insert: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+#Rota para deletar a imagem do album
+@router.delete("/api/admin/ambiente/album/delete/{ambientes_uid}/{foto_uid}")
+def delete_ambiente_imagem(
+        ambientes_uid: str, foto_uid: str, db: Session = Depends(database_controller.get_db)):
     try:
         result = db.execute(text("""
             DELETE FROM ambiente_galeria
@@ -347,32 +405,3 @@ def deletar_foto(ambientes_uid: str, foto_uid: str, db: Session = Depends(databa
         raise HTTPException(status_code=500, detail=f"Erro ao deletar foto: {str(e)}")
         print("🔥 ERRO BACKEND:", e)
         return {"erro": str(e)}
-
-
-@router.get("/get/ambiente/album/{ambientes_uid}")
-def get_ambiente_album(ambientes_uid: str, db: Session = Depends(database_controller.get_db)):
-    try:
-        result = db.execute(text("""Select ambiente_galeria_uid,
-                                     foto_dados, 
-                                     foto_mimetype, 
-                                     foto_nome, 
-                                     foto_tamanho, 
-                                     legenda, 
-                                     ordem from ambiente_galeria where ambiente_uid = :ambientes_uid"""),
-                            {"ambientes_uid": ambientes_uid}).fetchall()
-
-        return [
-            {
-                "id": str(r[0]),
-                "foto_nome": r[1],
-                "legenda": r[4],
-                "ordem": r[5],
-                "url": f"/ambientes/{ambientes_uid}/galeria/{r[0]}/imagem",
-            }
-            for r in result
-        ]
-
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao deletar foto: {str(e)}")
