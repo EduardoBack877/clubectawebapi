@@ -1,5 +1,4 @@
-
-from fastapi import  UploadFile, File, Form
+from fastapi import UploadFile, File, Form
 from fastapi.responses import Response
 from fastapi import APIRouter, Depends, HTTPException
 import base64
@@ -9,7 +8,6 @@ from sqlalchemy.orm import Session
 import database_controller
 
 router = APIRouter()
-
 
 
 @router.post("/insert/admin/novo-ambiente")
@@ -85,15 +83,15 @@ async def criar_ambiente(
 
 
 # ── EDITAR AMBIENTE ─────────────────────────────────────────────
-@router.put("/{ambientes_uid}")
+@router.put("/update/admin/ambiente/{ambientes_uid}")
 async def editar_ambiente(
-    ambientes_uid: str,
-    nome: str = Form(...),
-    descricao: str = Form(...),
-    capacidade: int = Form(0),
-    ativo: int = Form(1),
-    img: Optional[UploadFile] = File(None),
-    db: Session = Depends(database_controller.get_db),
+        ambientes_uid: str,
+        nome: str = Form(...),
+        descricao: str = Form(...),
+        capacidade: int = Form(0),
+        ativo: int = Form(1),
+        img: Optional[UploadFile] = File(None),
+        db: Session = Depends(database_controller.get_db),
 ):
     try:
         params = {
@@ -112,7 +110,7 @@ async def editar_ambiente(
             capa_clause = ", capa_dados=:capa_dados, capa_mimetype=:capa_mimetype, capa_nome=:capa_nome"
 
         result = db.execute(text(f"""
-            UPDATE ambientes
+            UPDATE ambiente
             SET nome=:nome,
                 descricao=:descricao,
                 capacidade=:capacidade,
@@ -144,30 +142,40 @@ async def editar_ambiente(
 
 
 # ── DELETAR AMBIENTE ────────────────────────────────────────────
-@router.delete("/{ambientes_uid}")
+@router.delete("/delete/admin/ambiente/{ambientes_uid}")
 def deletar_ambiente(
     ambientes_uid: str,
     db: Session = Depends(database_controller.get_db),
 ):
+    print(f"Tentando deletar ambiente: {ambientes_uid}")
     try:
-        result = db.execute(text("""
-            DELETE FROM ambientes
-            WHERE ambientes_uid=:uid
-            RETURNING ambientes_uid
-        """), {"uid": ambientes_uid})
+        # 1. Limpa a galeria (As chaves devem ser IGUAIS: :uid -> "uid")
+        db.execute(
+            text("DELETE FROM ambiente_galeria WHERE ambientes_uid = :uid"),
+            {"uid": ambientes_uid}
+        )
 
-        db.commit()
+        # 2. Deleta o ambiente
+        result = db.execute(
+            text("DELETE FROM ambiente WHERE ambientes_uid = :uid RETURNING ambientes_uid"),
+            {"uid": ambientes_uid}
+        )
 
-        if not result.fetchone():
+        deleted_id = result.fetchone()
+
+        if not deleted_id:
+            # Se cair aqui, o ID enviado não existe no banco
+            print("Nenhum ambiente encontrado com esse ID")
             raise HTTPException(status_code=404, detail="Ambiente não encontrado")
 
-        return {"deleted": ambientes_uid}
+        db.commit()
+        print(f"Sucesso! Deletado: {deleted_id[0]}")
+        return {"status": "success", "deleted_id": deleted_id[0]}
 
-    except HTTPException:
-        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao deletar ambiente: {str(e)}")
+        print(f"Erro capturado: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao deletar: {str(e)}")
 
 
 # ── LISTAR AMBIENTES ────────────────────────────────────────────
@@ -221,6 +229,7 @@ def listar_ambientes(db: Session = Depends(database_controller.get_db)):
         print(f"ERRO NO BACKEND: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao listar: {str(e)}")
 
+
 # ── CAPA DO AMBIENTE ────────────────────────────────────────────
 @router.get("/{ambientes_uid}/capa")
 def get_capa(ambientes_uid: str, db: Session = Depends(database_controller.get_db)):
@@ -240,7 +249,6 @@ def get_capa(ambientes_uid: str, db: Session = Depends(database_controller.get_d
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar capa: {str(e)}")
-
 
 
 # ── LISTAR GALERIA ──────────────────────────────────────────────
@@ -292,9 +300,7 @@ def get_foto(ambientes_uid: str, foto_uid: str, db: Session = Depends(database_c
         raise HTTPException(status_code=500, detail=f"Erro ao buscar foto: {str(e)}")
 
 
-
-
-#Parte de album de ambiente, serve para adicionar, listar e remover imagens
+# Parte de album de ambiente, serve para adicionar, listar e remover imagens
 @router.get("/get/ambiente/album/{ambientes_uid}")
 def get_ambiente_album(ambientes_uid: str, db: Session = Depends(database_controller.get_db)):
     try:
@@ -379,7 +385,7 @@ async def adicionar_foto(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-#Rota para deletar a imagem do album
+# Rota para deletar a imagem do album
 @router.delete("/api/admin/ambiente/album/delete/{ambientes_uid}/{foto_uid}")
 def delete_ambiente_imagem(
         ambientes_uid: str, foto_uid: str, db: Session = Depends(database_controller.get_db)):
