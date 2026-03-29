@@ -251,6 +251,53 @@ def get_capa(ambientes_uid: str, db: Session = Depends(database_controller.get_d
         raise HTTPException(status_code=500, detail=f"Erro ao buscar capa: {str(e)}")
 
 
+# ── LISTAR RESERVAS ──────────────────────────────────────────────
+@router.get("/get/admin/ambiente/{ambientes_uid}/reservas")
+def get_reservas(ambientes_uid: str, db=Depends(database_controller.get_db)):
+    try:
+        print("chegou na rota")
+        sql = text("""
+            SELECT 
+                r.reservas_uid,
+                r.data_reserva,
+                r.hora_inicio,
+                r.hora_fim,
+                r.status,
+                r.usuarioid,
+                u.nome,
+                u.document,
+                u.telefone
+            FROM RESERVAS r
+            JOIN usuario u on id = r.usuarioid
+            WHERE ambientes_uid = :ambiente_uid AND r.isactive = 1
+        """)
+
+        result = db.execute(sql, {"ambiente_uid": ambientes_uid}).fetchall()
+        print("fetchall nos resultados")
+        if not result:
+            return []
+        print("tem resultados")
+        print(result)
+        return [
+            {
+                "reservas_uid": str(r[0]),
+                "data_reserva": str(r[1]),
+                "hora_inicio": str(r[2])[:5],
+                "hora_fim": str(r[3])[:5],
+                "status": r[4],
+                "nomeUsuario": r[6],
+                "documento": r[7] if r[7] is not None else "", # Evita erro de serialização
+                "telefone": r[8] if r[8] is not None else ""
+            }
+            for r in result
+        ]
+
+    except Exception as e:
+        print(f"Erro ao buscar reservas: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+
+
 # ── LISTAR GALERIA ──────────────────────────────────────────────
 @router.get("/{ambientes_uid}/galeria")
 def listar_galeria(ambientes_uid: str, db: Session = Depends(database_controller.get_db)):
@@ -411,3 +458,96 @@ def delete_ambiente_imagem(
         raise HTTPException(status_code=500, detail=f"Erro ao deletar foto: {str(e)}")
         print("🔥 ERRO BACKEND:", e)
         return {"erro": str(e)}
+
+
+# ── EDITAR AMBIENTE ─────────────────────────────────────────────
+@router.put("/update/admin/reserva/{reserva_uid}")
+async def editar_reserva(
+    reserva_uid: str,
+    data_reserva: str = Form(...),    # Nome ajustado para clareza
+    hora_inicio: str = Form(...),     # Nome ajustado
+    hora_fim: str = Form(...),        # Nome ajustado
+    status: str = Form(...),
+    db: Session = Depends(database_controller.get_db),
+):
+    try:
+        params = {
+            "uid": reserva_uid,
+            "d": data_reserva,
+            "hi": hora_inicio,
+            "hf": hora_fim,
+            "st": status,
+        }
+
+        query = text("""
+            UPDATE reservas
+            SET
+                data_reserva = :d,
+                hora_inicio = :hi,
+                hora_fim = :hf,
+                status = :st,
+                changedate = NOW()
+            WHERE reservas_uid = :uid
+            RETURNING reservas_uid, data_reserva, hora_inicio, hora_fim, status
+        """)
+
+        result = db.execute(query, params)
+        row = result.fetchone()
+
+        if not row:
+            db.rollback()
+            raise HTTPException(status_code=404, detail="Reserva não encontrada")
+
+        db.commit()
+
+        return {
+            "id": str(row[0]),
+            "data_reserva": str(row[1]),
+            "hora_inicio": str(row[2])[:5], # Formata para HH:mm
+            "hora_fim": str(row[3])[:5],    # Formata para HH:mm
+            "status": row[4],               # Retorna a string ('confirmada', etc)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Erro ao editar reserva: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+
+@router.put("/update/admin/inativar/reserva/{reserva_uid}") # Aqui está no SINGULAR
+def inativar_reserva(
+        reserva_uid: str, # Mude de 'reservas_uid' para 'reserva_uid' para bater com a rota acima
+        db: Session = Depends(database_controller.get_db),
+):
+    try:
+        query = text("""
+            UPDATE reservas
+            SET isactive = 0
+            WHERE reservas_uid = :uid
+            RETURNING reservas_uid, isactive
+        """)
+
+        # Use o nome da variável que você definiu no argumento acima
+        result = db.execute(query, {"uid": reserva_uid})
+        row = result.fetchone()
+
+        if not row:
+            # Importante: rollback se não encontrar ninguém
+            db.rollback()
+            raise HTTPException(status_code=404, detail="Reserva não encontrada")
+
+        db.commit()
+
+        return {
+            "reserva_uid": str(row[0]),
+            "isactive": row[1],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Erro ao inativar reserva: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
