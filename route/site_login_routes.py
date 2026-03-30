@@ -81,7 +81,7 @@ def login(data: LoginPayload, db=Depends(database_controller.get_db)):
     try:
 
         result = db.execute(
-            text("SELECT id,nome,senha FROM usuario WHERE email = :email"),
+            text("SELECT id, nome, senha, isadmin FROM usuario WHERE email = :email"),
             {"email": data.email}
         )
         user = result.fetchone()
@@ -108,6 +108,7 @@ def login(data: LoginPayload, db=Depends(database_controller.get_db)):
             "token": token,
             "name": user[1],
             "id" : user[0],
+            "isAdmin": user[3],
             "type": "bearer"
         }
 

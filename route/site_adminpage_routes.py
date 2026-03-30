@@ -198,8 +198,8 @@ def listar_ambientes(db: Session = Depends(database_controller.get_db)):
             FROM ambiente a
             LEFT JOIN ambiente_galeria g ON g.ambientes_uid = a.ambientes_uid
             LEFT JOIN reservas r ON r.ambientes_uid = a.ambientes_uid 
-                AND r.status = 'confirmada'  -- Ajuste aqui para o seu critério de "ativa"
-            WHERE a.isactive = 1
+                AND r.isactive = 1
+            WHERE a.isactive = 1 
             GROUP BY 
                 a.ambientes_uid, a.nome, a.descricao, a.capacidade, 
                 a.isactive, a.capa_mimetype, a.capa_nome
