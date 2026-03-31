@@ -68,6 +68,7 @@ def get_capa(ambiente_id: str, db=Depends(database_controller.get_db)):
 @router.get("/api/ambientes/{ambientes_uid}/reservas")
 def get_reservas(ambientes_uid: str, db=Depends(database_controller.get_db)):
     try:
+        # Usando nomes explícitos no mapeamento para maior segurança
         sql = text("""
             SELECT 
                 reservas_uid,
@@ -77,25 +78,28 @@ def get_reservas(ambientes_uid: str, db=Depends(database_controller.get_db)):
                 status
             FROM RESERVAS
             WHERE ambientes_uid = :id
+              AND data_reserva >= CURRENT_DATE
+            ORDER BY data_reserva ASC, hora_inicio ASC;
         """)
 
-        result = db.execute(sql, {"id": ambientes_uid}).fetchall()
+        result = db.execute(sql, {"id": ambientes_uid}).mappings().all()
 
-        if not result:
-            return []
+        # Se não houver resultados, o list comprehension abaixo já retorna []
         return [
             {
-                "reservas_uid": str(r[0]),
-                "data_reserva": str(r[1]),
-                "hora_inicio": str(r[2])[:5],
-                "hora_fim": str(r[3])[:5],
-                "status": r[4],
+                "reservas_uid": str(r["reservas_uid"]),
+                "data_reserva": str(r["data_reserva"]),
+                # .strftime('%H:%M') é mais elegante que fatiar a string
+                "hora_inicio": r["hora_inicio"].strftime('%H:%M') if hasattr(r["hora_inicio"], 'strftime') else str(r["hora_inicio"])[:5],
+                "hora_fim": r["hora_fim"].strftime('%H:%M') if hasattr(r["hora_fim"], 'strftime') else str(r["hora_fim"])[:5],
+                "status": r["status"],
             }
             for r in result
         ]
     except Exception as e:
+        # Logar o erro completo no console para debug
         print(f"Erro ao buscar reservas: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro ao processar consulta de reservas.")
 
 
 @router.get("/api/galeria/{ambientes_uid}")

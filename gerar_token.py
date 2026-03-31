@@ -15,3 +15,5 @@ def gerar_token(usuario_id: int, password_version: int) -> str:
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return token
+
+

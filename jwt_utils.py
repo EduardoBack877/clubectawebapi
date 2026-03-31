@@ -43,6 +43,7 @@ def generate_token_for_user(user_details: dict) -> str | None:
         "isfeminino": user_details.get("isfeminino"),
         "crm": user_details.get("crm"),
         "rqe": user_details.get("rqe"),
+        "isAdmin": user_details.get("isadmin"),
     }
 
     try:
@@ -61,13 +62,14 @@ def validate_token(
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print("PAYLOAD DECODIFICADO:", payload)
 
         user_id = payload.get("id")
         email = payload.get("email")
         document = payload.get("document")
         password_version = payload.get("passwordVersion")
 
-        if not all([user_id, email, document, password_version]):
+        if not all([user_id, email]):
             raise HTTPException(status_code=400, detail="Dados insuficientes")
 
         # Query rápida usando a Sessão do SQLAlchemy (muito mais rápido que raw connection)
@@ -76,11 +78,10 @@ def validate_token(
             text("""
                 SELECT 1 FROM usuario 
                 WHERE id = :uid 
-                AND passwordversion = :pv 
                 AND isactive = 1
                 LIMIT 1
             """),
-            {"uid": user_id, "pv": password_version}
+            {"uid": user_id}
         ).fetchone()
 
         if not result:

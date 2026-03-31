@@ -6,6 +6,7 @@ from typing import Optional
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 import database_controller
+import jwt_utils
 
 router = APIRouter()
 
@@ -180,7 +181,7 @@ def deletar_ambiente(
 
 # ── LISTAR AMBIENTES ────────────────────────────────────────────
 @router.get("/api/ambientes")
-def listar_ambientes(db: Session = Depends(database_controller.get_db)):
+def listar_ambientes(user_data: dict = Depends(jwt_utils.validate_token),  db: Session = Depends(database_controller.get_db)):
     try:
         # Adicionei todas as colunas no GROUP BY para evitar erro de sintaxe SQL
         # E troquei a.createdate por a.ambientes_uid caso a coluna createdate não exista
@@ -268,33 +269,35 @@ def get_reservas(ambientes_uid: str, db=Depends(database_controller.get_db)):
                 u.document,
                 u.telefone
             FROM RESERVAS r
-            JOIN usuario u on id = r.usuarioid
-            WHERE ambientes_uid = :ambiente_uid AND r.isactive = 1
+            JOIN usuario u ON u.id = r.usuarioid
+            WHERE r.ambientes_uid = :ambiente_uid 
+              AND r.isactive = 1
+              AND r.data_reserva >= CURRENT_DATE
+            ORDER BY r.data_reserva ASC, r.hora_inicio ASC;
         """)
 
-        result = db.execute(sql, {"ambiente_uid": ambientes_uid}).fetchall()
-        print("fetchall nos resultados")
-        if not result:
-            return []
-        print("tem resultados")
-        print(result)
+        # Recomendo usar .mappings() para não se perder nos índices [0], [1]...
+        result = db.execute(sql, {"ambiente_uid": ambientes_uid}).mappings().all()
+
+        print(f"Encontrados {len(result)} resultados")
+
         return [
             {
-                "reservas_uid": str(r[0]),
-                "data_reserva": str(r[1]),
-                "hora_inicio": str(r[2])[:5],
-                "hora_fim": str(r[3])[:5],
-                "status": r[4],
-                "nomeUsuario": r[6],
-                "documento": r[7] if r[7] is not None else "", # Evita erro de serialização
-                "telefone": r[8] if r[8] is not None else ""
+                "reservas_uid": str(r["reservas_uid"]),
+                "data_reserva": str(r["data_reserva"]),
+                "hora_inicio": str(r["hora_inicio"])[:5],
+                "hora_fim": str(r["hora_fim"])[:5],
+                "status": r["status"],
+                "nomeUsuario": r["nome"],
+                "documento": r["document"] or "",
+                "telefone": r["telefone"] or ""
             }
             for r in result
         ]
 
     except Exception as e:
         print(f"Erro ao buscar reservas: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro interno ao processar reservas.")
 
 
 

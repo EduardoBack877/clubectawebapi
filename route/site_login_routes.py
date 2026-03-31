@@ -81,7 +81,7 @@ def login(data: LoginPayload, db=Depends(database_controller.get_db)):
     try:
 
         result = db.execute(
-            text("SELECT id, nome, senha, isadmin FROM usuario WHERE email = :email"),
+            text("SELECT id, nome, senha, isadmin, document, passwordversion FROM usuario WHERE email = :email"),
             {"email": data.email}
         )
         user = result.fetchone()
@@ -97,11 +97,15 @@ def login(data: LoginPayload, db=Depends(database_controller.get_db)):
         ):
             raise HTTPException(status_code=400, detail="Senha inválida")
 
-        token = create_access_token({
-            "user_id": user[0],
-            "email": data.email,
-        })
 
+
+        token = create_access_token({
+            "id": user[0],
+            "email": data.email,
+            "document": user[4],
+            "passwordVersion": user[5],
+            "isAdmin": user[3]
+        })
         print(user[1])
 
         return {
