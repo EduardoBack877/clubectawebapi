@@ -199,7 +199,7 @@ def listar_ambientes(user_data: dict = Depends(jwt_utils.validate_token),  db: S
             FROM ambiente a
             LEFT JOIN ambiente_galeria g ON g.ambientes_uid = a.ambientes_uid
             LEFT JOIN reservas r ON r.ambientes_uid = a.ambientes_uid 
-                AND r.isactive = 1
+                AND r.isactive = 1 AND r.data_reserva >= CURRENT_DATE
             WHERE a.isactive = 1 
             GROUP BY 
                 a.ambientes_uid, a.nome, a.descricao, a.capacidade, 

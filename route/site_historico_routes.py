@@ -50,3 +50,37 @@ def get_historico_reservas(
     except Exception as e:
         print(f"Erro ao buscar histórico: {e}")
         raise HTTPException(status_code=500, detail="Erro ao processar histórico")
+
+@router.put("/update/historico/reserva/{reservas_uid}")
+def cancelar_reserva_historico(token_data: dict = Depends(jwt_utils.validate_token),
+                               db: Session = Depends(database_controller.get_db), reservas_uid=str):
+    try:
+        query = text("""
+            UPDATE reservas
+                SET status = 'cancelada'
+                WHERE reservas_uid = :reservas_uid
+            RETURNING reservas_uid, status
+        """)
+
+        # Use o nome da variável que você definiu no argumento acima
+        result = db.execute(query, {"reservas_uid": reservas_uid})
+        row = result.fetchone()
+
+        if not row:
+            # Importante: rollback se não encontrar ninguém
+            db.rollback()
+            raise HTTPException(status_code=404, detail="Reserva não encontrada")
+
+        db.commit()
+
+        return {
+            "reserva_uid": str(row[0]),
+            "status": row[1],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Erro ao mudar o status da reserva: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")

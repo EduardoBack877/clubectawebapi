@@ -5,7 +5,7 @@ import base64
 import uuid
 from datetime import date, time
 from typing import Optional
-
+import jwt_utils
 # Assumindo que database_controller.py existe e contém get_db
 import database_controller
 
@@ -78,7 +78,9 @@ def get_reservas(ambientes_uid: str, db=Depends(database_controller.get_db)):
                 status
             FROM RESERVAS
             WHERE ambientes_uid = :id
-              AND data_reserva >= CURRENT_DATE
+              AND data_reserva >= CURRENT_DATE 
+              AND status != 'cancelada' 
+              AND isactive = 1
             ORDER BY data_reserva ASC, hora_inicio ASC;
         """)
 
@@ -138,7 +140,7 @@ def get_galeria(ambientes_uid: str, db=Depends(database_controller.get_db)):
 
 
 @router.post("/api/reservas", response_model=Reserva, status_code=status.HTTP_201_CREATED)
-def create_reserva(reserva: ReservaCreate, db=Depends(database_controller.get_db)):
+def create_reserva(reserva: ReservaCreate, token_data: dict = Depends(jwt_utils.validate_token) ,db=Depends(database_controller.get_db)):
     try:
         print(f"[BACKEND DEBUG] Dados recebidos para reserva: {reserva.dict()}")
         reservas_uid = str(uuid.uuid4())

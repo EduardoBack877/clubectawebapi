@@ -24,8 +24,8 @@ DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{
 # pool_pre_ping  → testa a conexão antes de usar (evita conexões mortas)
 engine = create_engine(
     DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=10,
+    max_overflow=15,
     pool_timeout=30,
     pool_recycle=1800,
     pool_pre_ping=True,
