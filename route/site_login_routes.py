@@ -16,6 +16,7 @@ class RegisterPayload(BaseModel):
     name: str
     sex: str
     phone: str
+    documento: str
 
 from sqlalchemy import text, INTEGER
 
@@ -51,15 +52,18 @@ def register(data: RegisterPayload, db=Depends(database_controller.get_db)):
                 isfeminino,
                 isvisitante,
                 isactive,
-                telefone
+                telefone,
+                document
             )
-            VALUES (:email, :senha, :nome, :sex, 1, 1, :telefone)
+            VALUES (:email, :senha, :nome, :sex, 1, 1, :telefone, :documento)
         """), {
             "email": data.email,
             "senha": senha_hash,
             "nome": data.name,
             "sex":  sex,
-            "telefone": data.phone
+            "telefone": data.phone,
+            "documento": data.documento
+
         })
 
         db.commit()
