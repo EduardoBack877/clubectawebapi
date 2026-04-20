@@ -139,3 +139,78 @@ def get_galeria(db=Depends(database_controller.get_db)):
         # Log do erro para debug interno
         print(f"Erro na galeria: {e}")
         raise HTTPException(status_code=500, detail="Erro ao buscar galeria de imagens")
+
+
+@router.get("/get/homescreen/eventos")
+def get_eventos(db=Depends(database_controller.get_db)):
+    try:
+        query = text("""
+            SELECT 
+                e.evento_uid,
+                e.nome,
+                e.descricao,
+                e.data,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', eg.evento_galeria_uid,
+                            'legenda', eg.legenda,
+                            'img', concat('/get/evento/foto/', eg.evento_galeria_uid)
+                        ) ORDER BY eg.ordem ASC
+                    ) FILTER (WHERE eg.evento_galeria_uid IS NOT NULL),
+                    '[]'
+                ) AS imagens
+            FROM evento e
+            LEFT JOIN evento_galeria eg 
+                ON eg.evento_uid = e.evento_uid 
+                AND eg.isactive = 1
+            WHERE e.isactive = 1
+            GROUP BY e.evento_uid, e.nome, e.descricao, e.data
+            ORDER BY e.data DESC
+        """)
+
+        result = db.execute(query).fetchall()
+
+        eventos_final = []
+
+        for row in result:
+            data = row._mapping
+            eventos_final.append({
+                "id": str(data["evento_uid"]),
+                "nome": data["nome"],
+                "desc": data["descricao"],
+                "data": str(data["data"]),
+                "imagens": data["imagens"]
+            })
+
+        return eventos_final
+
+    except Exception as e:
+        print(f"Erro ao buscar eventos: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao buscar eventos")
+
+
+@router.get("/get/evento/foto/{uid}")
+def get_foto_evento(uid: str, db=Depends(database_controller.get_db)):
+    try:
+        result = db.execute(
+            text("""
+                SELECT foto_dados, foto_mimetype 
+                FROM evento_galeria 
+                WHERE evento_galeria_uid = :uid AND isactive = 1
+            """),
+            {"uid": uid}
+        ).fetchone()
+
+        if not result or not result[0]:
+            return Response(status_code=404)
+
+        return Response(
+            bytes(result[0]),
+            media_type=result[1] or "image/jpeg",
+            headers={"Cache-Control": "max-age=86400"}
+        )
+
+    except Exception as e:
+        print(f"ERRO NA ROTA DE FOTO DE EVENTO: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
