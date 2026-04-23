@@ -19,7 +19,8 @@ from route import (
     site_homescreen_routes,
     site_adminpage_routes,
     site_paginadetalhada_routes,
-    site_historico_routes
+    site_historico_routes,
+    site_usersettings_routes
 )
 
 
@@ -78,6 +79,7 @@ app.include_router(site_homescreen_routes.router)
 app.include_router(site_adminpage_routes.router)
 app.include_router(site_paginadetalhada_routes.router)
 app.include_router(site_historico_routes.router)
+app.include_router(site_usersettings_routes.router)
 # =========================
 # START DO UVICORN (EXE SAFE)
 # =========================
