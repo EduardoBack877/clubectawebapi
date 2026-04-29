@@ -10139,3 +10139,21 @@ Traceback (most recent call last):
   File "C:\Users\gabri\PycharmProjects\clubectawebapi\route\site_homescreen_routes.py", line 97, in get_foto_ambiente
     return Response(content=str(e), status_code=500)
 TypeError: Response.__init__() got an unexpected keyword argument 'content'
+(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
