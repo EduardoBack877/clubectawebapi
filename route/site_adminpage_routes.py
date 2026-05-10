@@ -195,7 +195,8 @@ def listar_ambientes(user_data: dict = Depends(jwt_utils.validate_token),  db: S
                 a.capa_mimetype, 
                 a.capa_nome,
                 COUNT(DISTINCT g.ambiente_galeria_uid) AS total_fotos,
-                COUNT(DISTINCT r.reservas_uid) AS total_reservas_ativas
+                COUNT(DISTINCT r.reservas_uid) AS total_reservas_ativas,
+                a.isgeral
             FROM ambiente a
             LEFT JOIN ambiente_galeria g ON g.ambientes_uid = a.ambientes_uid
             LEFT JOIN reservas r ON r.ambientes_uid = a.ambientes_uid 
@@ -203,7 +204,7 @@ def listar_ambientes(user_data: dict = Depends(jwt_utils.validate_token),  db: S
             WHERE a.isactive = 1 
             GROUP BY 
                 a.ambientes_uid, a.nome, a.descricao, a.capacidade, 
-                a.isactive, a.capa_mimetype, a.capa_nome
+                a.isactive, a.capa_mimetype, a.capa_nome, a.isgeral
             ORDER BY a.ambientes_uid DESC
         """)
 
@@ -220,7 +221,8 @@ def listar_ambientes(user_data: dict = Depends(jwt_utils.validate_token),  db: S
                 "capa_url": f"/ambientes/{r[0]}/capa" if r[5] else None,
                 "capa_nome": r[6],
                 "total_fotos": r[7],
-                "quantidade_reservas": r[8]
+                "quantidade_reservas": r[8],
+                "isgeral": r[9]
             }
             for r in rows
         ]
